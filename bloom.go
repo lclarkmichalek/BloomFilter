@@ -1,18 +1,17 @@
 package bloom
 
-import ("crypto/sha512"
-	"container/list")
+import ("crypto/sha512")
 
 type hash [64]uint8
 
 type bloomfilter struct {
 	hbytes hash
-	data   *list.List
+	data   []hash
 }
 
 func New() *bloomfilter {
 	bf := new(bloomfilter)
-	bf.data = list.New()
+	bf.data = make([]hash, 1)
 	return bf
 }
 
@@ -32,12 +31,8 @@ func (b *bloomfilter) In(in string) bool {
 	if !equals(or(b.hbytes, hsh), b.hbytes) {
 		return false
 	}
-	for i := b.data.Front(); i != nil; i = i.Next() {
-		val, ok := i.Value.(hash)
-		if !ok {
-			continue
-		}
-		if equals(val, hsh) {
+	for i := 0; i < len(b.data); i++ {
+		if equals(b.data[i], hsh) {
 			return true
 		}
 	}
@@ -58,7 +53,7 @@ func (b *bloomfilter) Add(in string) {
 	}
 
 	b.hbytes = or(b.hbytes, hsh)
-	b.data.PushBack(hsh)
+	b.data = append(b.data, hsh)
 }
 
 func or(first hash, second hash) hash {
